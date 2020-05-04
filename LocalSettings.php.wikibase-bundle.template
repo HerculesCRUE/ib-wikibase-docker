@@ -1,0 +1,5 @@
+# PluggableAuth
+wfLoadExtension( 'PluggableAuth' );
+
+# OpenIDConnect
+wfLoadExtension( 'OpenIDConnect' );

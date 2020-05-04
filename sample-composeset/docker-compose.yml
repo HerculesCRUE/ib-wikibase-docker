@@ -1,0 +1,78 @@
+# MediaWiki with MariaDB
+#
+# Access via "http://localhost:8080"
+#   (or "http://$(docker-machine ip):8080" if using docker-machine)
+version: '3'
+services:
+
+  wikibase:
+    # image: wikibase/wikibase:1.34-bundle
+    image: wikibase-custom
+    links:
+      - mysql
+    ports:
+    # CONFIG - Change the 8181 here to expose Wikibase & MediaWiki on a different port
+     - "8181:80"
+    volumes:
+      - mediawiki-images-data:/var/www/html/images
+      - quickstatements-data:/quickstatements/data
+      - ./LocalSettings.php:/var/www/html/LocalSettings.php
+    depends_on:
+    - mysql
+    - elasticsearch
+    restart: unless-stopped
+    networks:
+      default:
+        aliases:
+         - wikibase.svc
+         # CONFIG - Add your real wikibase hostname here, for example wikibase-registry.wmflabs.org
+    environment:
+      - DB_SERVER=mysql.svc:3306
+      - MW_ELASTIC_HOST=elasticsearch.svc
+      - MW_ELASTIC_PORT=9200
+      # CONFIG - Change the default values below
+      - MW_ADMIN_NAME=WikibaseAdmin
+      - MW_ADMIN_PASS=WikibaseDockerAdminPass
+      - MW_ADMIN_EMAIL=admin@example.com
+      - MW_WG_SECRET_KEY=secretkey
+      # CONFIG - Change the default values below (should match mysql values in this file)
+      - DB_USER=wikiuser
+      - DB_PASS=sqlpass
+      - DB_NAME=my_wiki
+      - QS_PUBLIC_SCHEME_HOST_AND_PORT=http://localhost:9191
+
+  mysql:
+    image: mariadb:10.3
+    restart: unless-stopped
+    volumes:
+      - mysql-data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_RANDOM_ROOT_PASSWORD: 'yes'
+      # CONFIG - Change the default values below (should match values passed to wikibase)
+      MYSQL_DATABASE: 'my_wiki'
+      MYSQL_USER: 'wikiuser'
+      MYSQL_PASSWORD: 'sqlpass'
+    networks:
+      default:
+        aliases:
+         - mysql.svc
+  
+  elasticsearch:
+    image: wikibase/elasticsearch:6.5.4-extra
+    restart: unless-stopped
+    networks:
+      default:
+        aliases:
+         - elasticsearch.svc
+    environment:
+      discovery.type: single-node
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+  # CONFING, in order to not load quickstatements then remove this entire section
+
+volumes:
+  mysql-data:
+  elasticsearch-data:
+  mediawiki-images-data:
+  quickstatements-data:
