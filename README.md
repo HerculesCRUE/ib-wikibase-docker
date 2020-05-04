@@ -43,3 +43,26 @@ Donde se indicarán:
 * URL del Realm
 * Client ID
 * Client secret
+
+## Usuarios y roles
+
+Al integrar Wikibase con el servidor de autenticación externo, no es capaz de recoger los roles que se definan en este último. Debido a esto, tras el cambio de método de autenticación, no será posible acceder con los usuarios locales y por tanto todos los usuarios que se loguen serán usuarios estándar.
+
+Para poder asignar roles, es preciso que al menos uno de los usuarios sea administrador, para ello, una vez logado el usuario la primera vez se creará automáticamente el usuario en wikibase, debiendo asignar los roles por base de datos. Wikibase dispone de varias tablas en este sentido:
+
+- user
+- user_groups
+
+En primer lugar será necesario localizar el usuario en la tabla `user`, ejecutando la siguiente consulta:
+
+```sql
+SELECT * FROM my_wiki.user;
+```
+
+Una vez localizado y obtenido su `user_id` habrá que irse a la tabla `user_gropus` y asignarle los permisos. Lo más sencillo es utilizar los permisos que tiene el usuario administrador (normalmente `WikibaseAdmin` con id 1) y asignárselos al nuevo usuario mediante la ejecución de la siguiente consulta (teniendo en cuenta que el usuario destino tenga como id el valor 2):
+
+```sql
+UPDATE `my_wiki`.`user_groups` SET `ug_user`='2' WHERE `ug_user`='1';
+```
+
+A partir de este momento, el usuario seleccionado pasará a ser administrador de Wikibase.
